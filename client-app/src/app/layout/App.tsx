@@ -4,12 +4,14 @@ import NavBar from "./NavBar";
 import {observer} from "mobx-react-lite";
 import {Outlet, useLocation} from "react-router-dom";
 import HomePage from "../../features/home/homePage";
+import {ToastContainer} from "react-toastify";
 
 const App = () => {
     const location = useLocation();
 
     return (
         <>
+            <ToastContainer position='bottom-right' theme='colored'/>
             {location.pathname === '/' ? <HomePage/> : (
                 <>
                     <NavBar/>

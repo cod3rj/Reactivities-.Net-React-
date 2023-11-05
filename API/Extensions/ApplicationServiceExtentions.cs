@@ -1,5 +1,7 @@
 using Application.Activities;
 using Application.Core;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.EntityFrameworkCore;
 using Persistence;
 
@@ -32,6 +34,10 @@ namespace API.Extensions
 
             // We register Automapper services and tell it to look for the profiles in the Application project
             services.AddAutoMapper(typeof(MappingProfiles).Assembly);
+
+            // We register the FluentValidation services and tell it to look for the validators in the Application project
+            services.AddFluentValidationAutoValidation();
+            services.AddValidatorsFromAssemblyContaining<ActivityValidator>();
 
             return services;
         }
