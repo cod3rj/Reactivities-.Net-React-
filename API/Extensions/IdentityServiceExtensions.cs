@@ -1,7 +1,9 @@
 using System.Text;
 using API.Services;
 using Domain;
+using Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using Persistence;
 
@@ -39,6 +41,16 @@ namespace API.Extensions
                 };
             });
 
+            services.AddAuthorization(opt =>
+            {
+                // We add a policy to check if the user is the host of the activity
+                opt.AddPolicy("IsActivityHost", policy =>
+                {
+                    policy.Requirements.Add(new IsHostRequirement());
+                });
+            });
+
+            services.AddTransient<IAuthorizationHandler, IsHostRequirementHandler>(); // We add the authorization handler
             services.AddScoped<TokenService>();
 
             return services;

@@ -1,7 +1,9 @@
 using Application.Core;
+using Application.Interfaces;
 using Domain;
 using FluentValidation;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Persistence;
 
 namespace Application.Activities
@@ -26,14 +28,29 @@ namespace Application.Activities
         public class Handler : IRequestHandler<Command, Result<Unit>> // This class is used to handle the command
         {
             private readonly DataContext _context;
+            private readonly IUserAccessor _userAccessor;
 
-            public Handler(DataContext context)
+            public Handler(DataContext context, IUserAccessor userAccessor)
             {
+                _userAccessor = userAccessor;
                 _context = context;
             }
 
             public async Task<Result<Unit>> Handle(Command request, CancellationToken cancellationToken)
             {
+                // We get the user from the database
+                var user = await _context.Users.FirstOrDefaultAsync(x => x.UserName == _userAccessor.GetUsername());
+
+                // We create a new attendee
+                var attendee = new ActivityAttendee
+                {
+                    AppUser = user,
+                    Activity = request.Activity,
+                    isHost = true
+                };
+
+                request.Activity.Attendees.Add(attendee); // We add the attendee to the activity
+
                 _context.Activities.Add(request.Activity); // We add the activity to the database
 
                 var result = await _context.SaveChangesAsync() > 0; // We save the changes to the database if the result is greater than 0 otherwise it would return false
