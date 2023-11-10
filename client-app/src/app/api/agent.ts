@@ -1,5 +1,5 @@
 import axios, {AxiosError, AxiosResponse} from "axios";
-import {Activity} from "../models/activity";
+import {Activity, ActivityFormValues} from "../models/activity";
 import {toast} from "react-toastify";
 import {router} from "../router/Routes";
 import {store} from "../stores/store";
@@ -84,9 +84,10 @@ const request = {
 const Activities = {
     list: () => request.get<Activity[]>('/activities'),
     details: (id: string) => request.get<Activity>(`/activities/${id}`),
-    create: (activity: Activity) => axios.post('/activities', activity),
-    update: (activity: Activity) => axios.put(`/activities/${activity.id}`, activity),
-    delete: (id: string) => axios.delete<void>(`/activities/${id}`)
+    create: (activity: ActivityFormValues) => request.post('/activities', activity),
+    update: (activity: ActivityFormValues) => request.put(`/activities/${activity.id}`, activity),
+    delete: (id: string) => request.del<void>(`/activities/${id}`),
+    attend: (id: string) => request.post<void>(`/activities/${id}/attend`, {})
 }
 
 // This will be the object that we will use to make requests to our API/Account Controller
