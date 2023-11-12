@@ -9,5 +9,7 @@ namespace Domain
 
         // We add a list of activities to the AppUser class
         public ICollection<ActivityAttendee> Activities { get; set; } = new List<ActivityAttendee>();
+        // We add a list of photos to the AppUser class
+        public ICollection<Photo> Photos { get; set; }
     }
 }

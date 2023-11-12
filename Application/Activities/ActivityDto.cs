@@ -15,6 +15,6 @@ namespace Application.Activities
         public Boolean IsCancelled { get; set; }
 
         // We add a collection of profiles to the ActivityDto class
-        public ICollection<Profile> Attendees { get; set; }
+        public ICollection<AttendeeDto> Attendees { get; set; }
     }
 }
