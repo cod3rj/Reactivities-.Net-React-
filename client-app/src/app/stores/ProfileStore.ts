@@ -96,4 +96,23 @@ export default class ProfileStore {
             runInAction(() => this.loading = false);
         }
     }
+
+    //
+    updateProfile = async (profile: Partial<Profile>) => {
+        this.loading = true;
+        try {
+            await agent.Profiles.updateProfile(profile); // This will update the profile in the API
+            runInAction(() => {
+                // If the profile display name is not equal to the display name in the state, update the display name in the state
+                if (profile.displayName !== store.userStore.user?.displayName) {
+                    store.userStore.setDisplayName(profile.displayName!); // This will update the display name in the state
+                }
+                this.profile = {...this.profile, ...profile as Profile}; // This will update the profile in the state
+                this.loading = false; // This will set the loading state to false
+            })
+        }catch (error) {
+            console.log(error);
+            runInAction(() => this.loading = false);
+        }
+    }
 }

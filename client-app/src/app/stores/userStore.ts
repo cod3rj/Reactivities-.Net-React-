@@ -50,4 +50,9 @@ export default class UserStore {
     setImage = (image: string) => {
         if (this.user) this.user.image = image; // If the user exists, set the image
     }
+
+    //
+    setDisplayName = (name: string) => {
+        if (this.user) this.user.displayName = name; // If the user exists, set the display name
+    }
 }
