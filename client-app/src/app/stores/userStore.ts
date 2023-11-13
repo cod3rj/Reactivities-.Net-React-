@@ -45,4 +45,9 @@ export default class UserStore {
             console.log(error);
         }
     }
+
+    //
+    setImage = (image: string) => {
+        if (this.user) this.user.image = image; // If the user exists, set the image
+    }
 }

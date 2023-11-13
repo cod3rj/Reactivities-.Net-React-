@@ -4,6 +4,7 @@ import {toast} from "react-toastify";
 import {router} from "../router/Routes";
 import {store} from "../stores/store";
 import {User, UserFormValues} from "../models/user";
+import {Profile} from "../models/profile";
 
 // This function creates a delay using a Promise and setTimeout
 const sleep = (delay: number) => {
@@ -97,9 +98,24 @@ const Account = {
     register: (user: UserFormValues) => request.post<User>('/account/register', user),
 }
 
+//
+const Profiles = {
+    get: (username: string) => request.get<Profile>(`/profiles/${username}`),
+    uploadPhoto: (file: Blob) => {
+        let formData = new FormData(); // This is a built in JS class
+        formData.append('File', file); // File is the name of the property on the API
+        return axios.post('photos', formData, { // photos is the endpoint, formData is the data we are sending, and the third argument is the config
+            headers: {'Content-Type': 'multipart/form-data'}
+        })
+    },
+    setMainPhoto: (id: string) => request.post(`/photos/${id}/setMain`, {}),
+    deletePhoto: (id: string) => request.del(`/photos/${id}`),
+}
+
 const agent = {
     Activities,
-    Account
+    Account,
+    Profiles
 }
 
 export default agent;
