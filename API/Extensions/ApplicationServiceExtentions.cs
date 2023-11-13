@@ -28,7 +28,11 @@ namespace API.Extensions
             {
                 options.AddPolicy("CorsPolicy", policy =>
                 {
-                    policy.AllowAnyHeader().AllowAnyMethod().WithOrigins("http://localhost:3000");
+                    policy
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials()
+                    .WithOrigins("http://localhost:3000");
                 });
             });
 
@@ -51,6 +55,9 @@ namespace API.Extensions
 
             // We register Cloudinary settings for photo upload
             services.Configure<CloudinarySettings>(config.GetSection("Cloudinary"));
+
+            // We register the SignalR services
+            services.AddSignalR();
 
             return services;
         }

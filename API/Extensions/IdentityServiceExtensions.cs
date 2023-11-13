@@ -39,6 +39,27 @@ namespace API.Extensions
                     ValidateAudience = true, // We validate the audience
                     ValidAudience = config["Authentication:Audience"], // We set the audience
                 };
+                opt.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        // Get the access token from the query string
+                        var accessToken = context.Request.Query["access_token"];
+
+                        // Get the path from the request
+                        var path = context.HttpContext.Request.Path;
+
+                        // Check if the access token is not null and if the path starts with /chat
+                        if (!string.IsNullOrEmpty(accessToken) && (path.StartsWithSegments("/chat")))
+                        {
+                            // Set the token in the context
+                            context.Token = accessToken;
+                        }
+
+                        // Return a completed task
+                        return Task.CompletedTask;
+                    }
+                };
             });
 
             services.AddAuthorization(opt =>

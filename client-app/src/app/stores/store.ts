@@ -4,6 +4,7 @@ import CommonStore from "./commonStore";
 import UserStore from "./userStore";
 import ModalStore from "./modalStore";
 import ProfileStore from "./ProfileStore";
+import CommentStore from "./commentStore";
 
 // This interface will define the properties of our store
 interface Store {
@@ -12,6 +13,7 @@ interface Store {
     userStore: UserStore;
     modalStore: ModalStore;
     profileStore: ProfileStore;
+    commentStore: CommentStore;
 }
 
 // store is an object that will hold all the stores
@@ -21,6 +23,7 @@ export const store: Store = {
     userStore: new UserStore(),
     modalStore: new ModalStore(),
     profileStore: new ProfileStore(),
+    commentStore: new CommentStore(),
 }
 
 // Initializes with the store object, making it available to all the components in our application

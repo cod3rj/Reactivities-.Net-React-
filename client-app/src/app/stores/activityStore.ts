@@ -1,12 +1,10 @@
 import {makeAutoObservable, runInAction} from "mobx";
 import {Activity, ActivityFormValues} from "../models/activity";
 import agent from "../api/agent";
-import {v4 as uuid} from 'uuid';
 import {format} from "date-fns";
 import {store} from "./store";
 import {Profile} from "../models/profile";
 import {toast} from "react-toastify";
-import update = toast.update;
 
 export default class ActivityStore {
     // An in-memory storage of activities
@@ -36,13 +34,13 @@ export default class ActivityStore {
     }
 
     // This will return
-    get groupedActivities () {
+    get groupedActivities() {
         return Object.entries(
             this.activitiesByDate.reduce((activities, activity) => {
                 const date = format(activity.date!, 'dd MMM yyyy');
                 activities[date] = activities[date] ? [...activities[date], activity] : [activity];
                 return activities;
-            }, {} as {[key: string]: Activity[]})
+            }, {} as { [key: string]: Activity[] })
         )
     }
 
@@ -67,8 +65,7 @@ export default class ActivityStore {
         if (activity) {
             this.selectedActivity = activity;
             return activity;
-        }
-        else {
+        } else {
             this.setLoadingInitial(true);
             try {
                 activity = await agent.Activities.details(id);
@@ -76,7 +73,7 @@ export default class ActivityStore {
                 runInAction(() => this.selectedActivity = activity);
                 this.setLoadingInitial(false);
                 return activity;
-            }catch (error) {
+            } catch (error) {
                 console.log(error);
                 this.setLoadingInitial(false);
             }
@@ -142,7 +139,7 @@ export default class ActivityStore {
             await agent.Activities.update(activity);
             runInAction(() => {
                 if (activity.id) {
-                    const updatedActivity = {...this.getActivity(activity.id), ...activity};
+                    const updatedActivity = { ...this.getActivity(activity.id), ...activity };
                     this.activityRegistry.set(activity.id, updatedActivity as Activity);
                     this.selectedActivity = updatedActivity as Activity;
                 }
@@ -187,7 +184,7 @@ export default class ActivityStore {
                 }
                 this.activityRegistry.set(this.selectedActivity!.id, this.selectedActivity!);
             })
-        }catch (error) {
+        } catch (error) {
             console.log(error);
         } finally {
             runInAction(() => this.loading = false);
@@ -198,15 +195,20 @@ export default class ActivityStore {
     cancelActivityToggle = async () => {
         this.loading = true;
         try {
-            await agent.Activities.attend(this.selectedActivity!.id); // This will call the attend method in the agent.ts file
+            await agent.Activities.attend(this.selectedActivity!.id);
             runInAction(() => {
-                this.selectedActivity!.isCancelled = !this.selectedActivity?.isCancelled; // This will toggle the isCancelled property
-                this.activityRegistry.set(this.selectedActivity!.id, this.selectedActivity!); // This will update the activity in the registry
+                this.selectedActivity!.isCancelled = !this.selectedActivity?.isCancelled;
+                this.activityRegistry.set(this.selectedActivity!.id, this.selectedActivity!);
             })
         } catch (error) {
             console.log(error);
         } finally {
             runInAction(() => this.loading = false);
         }
+    }
+
+    // Clear the selected activity from the store
+    clearSelectedActivity = () => {
+        this.selectedActivity = undefined;
     }
 }

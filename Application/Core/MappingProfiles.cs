@@ -1,5 +1,6 @@
 using System.Security.Cryptography.X509Certificates;
 using Application.Activities;
+using Application.Comments;
 using AutoMapper;
 using Domain;
 
@@ -25,6 +26,14 @@ namespace Application.Core
             CreateMap<AppUser, Profiles.Profile>()
                  // We map the Image property to the Photo.Url property
                  .ForMember(d => d.Image, o => o.MapFrom(s => s.Photos.FirstOrDefault(x => x.IsMain).Url));
+            // We are mapping from Comment -> CommentDto (source -> target) e.g comment.Body = commentDto.Body;
+            CreateMap<Comment, CommentDto>()
+                // We map the DisplayName property to the AppUser.DisplayName property
+                .ForMember(d => d.DisplayName, o => o.MapFrom(s => s.Author.DisplayName))
+                // We map the Username property to the AppUser.UserName property
+                .ForMember(d => d.Username, o => o.MapFrom(s => s.Author.UserName))
+                // We map the Image property to the AppUser.Photos.Url property
+                .ForMember(d => d.Image, o => o.MapFrom(s => s.Author.Photos.FirstOrDefault(x => x.IsMain).Url));
         }
     }
 }

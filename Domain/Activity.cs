@@ -13,5 +13,7 @@ namespace Domain
 
         // We add a list of attendees to the Activity class
         public ICollection<ActivityAttendee> Attendees { get; set; } = new List<ActivityAttendee>();
+        // We add a list of comments to the Activity class
+        public ICollection<Comment> Comments { get; set; } = new List<Comment>();
     }
 }
