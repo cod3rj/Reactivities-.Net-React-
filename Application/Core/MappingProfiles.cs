@@ -10,22 +10,41 @@ namespace Application.Core
     {
         public MappingProfiles()
         {
+            // Initialize currentUsername variable with null
+            string currentUsername = null;
+
             // We are mapping from Activity -> Activity (source -> target) e.g activity.Title = request.Activity.Title ?? activity.Title; 
             CreateMap<Activity, Activity>();
+
             // We are mapping from Activity -> ActivityDto (source -> target) e.g activity.Title = request.Activity.Title ?? ActivityDto.Title;
             CreateMap<Activity, ActivityDto>()
                 .ForMember(d => d.HostUsername, o => o.MapFrom(s => s.Attendees
                 .FirstOrDefault(x => x.isHost).AppUser.UserName)); // We map the HostUsername property to the AppUser.UserName property
+
             // We are mapping from ActivityAttendee -> Profiles.Profile (source -> target) e.g activityAttendee.AppUser.DisplayName = profile.DisplayName;
             CreateMap<ActivityAttendee, AttendeeDto>()
                 .ForMember(d => d.DisplayName, o => o.MapFrom(s => s.AppUser.DisplayName))
                 .ForMember(d => d.Username, o => o.MapFrom(s => s.AppUser.UserName))
                 .ForMember(d => d.Bio, o => o.MapFrom(s => s.AppUser.Bio))
-                .ForMember(d => d.Image, o => o.MapFrom(s => s.AppUser.Photos.FirstOrDefault(x => x.IsMain).Url));
-            // We are mapping from AppUser -> Profiles.Profile (source -> target) e.g appUser.DisplayName = profile.DisplayName;
+                .ForMember(d => d.Image, o => o.MapFrom(s => s.AppUser.Photos.FirstOrDefault(x => x.IsMain).Url))
+                // Map the count of followers from AppUser to the FollowersCount property in the Profile
+                .ForMember(d => d.FollowersCount, o => o.MapFrom(s => s.AppUser.Followers.Count))
+                // Map the count of following users from AppUser to the FollowingCount property in the Profile
+                .ForMember(d => d.FollowingCount, o => o.MapFrom(s => s.AppUser.Followings.Count))
+                // Map 'Following' based on whether there are followers with the current username
+                .ForMember(d => d.Following, o => o.MapFrom(s => s.AppUser.Followers.Any(x => x.Observer.UserName == currentUsername)));
+
+            // AutoMapper configuration for mapping properties from AppUser to Profiles.Profile
             CreateMap<AppUser, Profiles.Profile>()
-                 // We map the Image property to the Photo.Url property
-                 .ForMember(d => d.Image, o => o.MapFrom(s => s.Photos.FirstOrDefault(x => x.IsMain).Url));
+                // Map the Image property from AppUser to the Photo.Url property in the Profile
+                .ForMember(d => d.Image, o => o.MapFrom(s => s.Photos.FirstOrDefault(x => x.IsMain).Url))
+                // Map the count of followers from AppUser to the FollowersCount property in the Profile
+                .ForMember(d => d.FollowersCount, o => o.MapFrom(s => s.Followers.Count))
+                // Map the count of following users from AppUser to the FollowingCount property in the Profile
+                .ForMember(d => d.FollowingCount, o => o.MapFrom(s => s.Followings.Count))
+                // Map 'Following' based on whether there are followers with the current username
+                .ForMember(d => d.Following, o => o.MapFrom(s => s.Followers.Any(x => x.Observer.UserName == currentUsername)));
+
             // We are mapping from Comment -> CommentDto (source -> target) e.g comment.Body = commentDto.Body;
             CreateMap<Comment, CommentDto>()
                 // We map the DisplayName property to the AppUser.DisplayName property

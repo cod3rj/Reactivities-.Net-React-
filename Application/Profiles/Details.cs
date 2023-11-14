@@ -1,4 +1,5 @@
 using Application.Core;
+using Application.Interfaces;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using MediatR;
@@ -20,20 +21,25 @@ namespace Application.Profiles
         {
             private readonly IMapper _mapper;
             private readonly DataContext _context;
-            public Handler(DataContext context, IMapper mapper)
+            private readonly IUserAccessor _userAccessor;
+
+            // Constructor to initialize dependencies
+            public Handler(DataContext context, IMapper mapper, IUserAccessor userAccessor)
             {
+                _userAccessor = userAccessor;
                 _context = context;
                 _mapper = mapper;
-
             }
 
             public async Task<Result<Profile>> Handle(Query request, CancellationToken cancellationToken)
             {
-                // 
-                var user = await _context.Users.ProjectTo<Profile>(_mapper.ConfigurationProvider)
+                // Get the user's profile from the database, mapping it to the Profile model
+                // and passing the current username for specific mapping logic
+                var user = await _context.Users
+                    .ProjectTo<Profile>(_mapper.ConfigurationProvider, new { currentUsername = _userAccessor.GetUsername() })
                     .SingleOrDefaultAsync(x => x.Username == request.Username);
 
-                // 
+                // Return the result with the user's profile
                 return Result<Profile>.Success(user);
             }
         }

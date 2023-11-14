@@ -19,7 +19,7 @@ axios.defaults.baseURL = 'http://localhost:5000/api';
 // This function extracts the response data
 const responseBody = <T>(response: AxiosResponse<T>) => response.data;
 
-//
+// Axios request interceptor to add authorization header
 axios.interceptors.request.use(config => {
     const token = store.commonStore.token;
     if (token && config.headers) config.headers.Authorization = `Bearer ${token}`;
@@ -73,7 +73,7 @@ axios.interceptors.response.use(async response => {
     return Promise.reject(error);
 })
 
-// This is our request object that will contain all of our HTTP methods e.g get, post, put, delete
+// Request object containing all HTTP methods (get, post, put, delete)
 const request = {
     get: <T>(url: string) => axios.get<T>(url).then(responseBody),
     post: <T>(url: string, body: {}) => axios.post<T>(url, body).then(responseBody),
@@ -111,6 +111,8 @@ const Profiles = {
     setMainPhoto: (id: string) => request.post(`/photos/${id}/setMain`, {}),
     deletePhoto: (id: string) => request.del(`/photos/${id}`),
     updateProfile: (profile: Partial<Profile>) => request.put(`/profiles`, profile),
+    updateFollowing: (username: string) => request.post(`/follow/${username}`, {}),
+    listFollowings: (username: string, predicate: string) => request.get<Profile[]>(`/follow/${username}?predicate=${predicate}`),
 }
 
 const agent = {

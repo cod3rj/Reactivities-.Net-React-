@@ -14,7 +14,7 @@ export interface Activity {
     isHost: boolean;
     isGoing: boolean;
     host?: Profile;
-    attendees?: Profile[];
+    attendees: Profile[];
 }
 
 export class Activity implements Activity {

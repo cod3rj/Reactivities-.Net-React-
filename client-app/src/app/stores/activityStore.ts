@@ -1,10 +1,9 @@
-import {makeAutoObservable, runInAction} from "mobx";
-import {Activity, ActivityFormValues} from "../models/activity";
+import { makeAutoObservable, runInAction } from "mobx";
+import { Activity, ActivityFormValues } from "../models/activity";
 import agent from "../api/agent";
-import {format} from "date-fns";
-import {store} from "./store";
-import {Profile} from "../models/profile";
-import {toast} from "react-toastify";
+import { format } from "date-fns";
+import { store } from "./store";
+import { Profile } from "../models/profile";
 
 export default class ActivityStore {
     // An in-memory storage of activities
@@ -38,9 +37,9 @@ export default class ActivityStore {
         return Object.entries(
             this.activitiesByDate.reduce((activities, activity) => {
                 const date = format(activity.date!, 'dd MMM yyyy');
-                activities[date] = activities[date] ? [...activities[date], activity] : [activity];
+                activities[ date ] = activities[ date ] ? [ ...activities[ date ], activity ] : [ activity ];
                 return activities;
-            }, {} as { [key: string]: Activity[] })
+            }, {} as { [ key: string ]: Activity[] })
         )
     }
 
@@ -123,7 +122,7 @@ export default class ActivityStore {
             await agent.Activities.create(activity);
             const newActivity = new Activity(activity);
             newActivity.hostUsername = user!.userName;
-            newActivity.attendees = [attendee];
+            newActivity.attendees = [ attendee ];
             this.setActivity(newActivity);
             runInAction(() => {
                 this.selectedActivity = newActivity;
@@ -210,5 +209,17 @@ export default class ActivityStore {
     // Clear the selected activity from the store
     clearSelectedActivity = () => {
         this.selectedActivity = undefined;
+    }
+
+    // Update the attendees following
+    updateAttendeeFollowing = (username: string) => {
+        this.activityRegistry.forEach(activity => {
+            activity.attendees.forEach(attendee => {
+                if (attendee.username === username) {
+                    attendee.following ? attendee.followersCount-- : attendee.followersCount++;
+                    attendee.following = !attendee.following;
+                }
+            })
+        })
     }
 }

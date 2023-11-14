@@ -1,5 +1,5 @@
 import {Photo, Profile} from "../models/profile";
-import {makeAutoObservable, runInAction} from "mobx";
+import {makeAutoObservable, reaction, runInAction} from "mobx";
 import agent from "../api/agent";
 import {store} from "./store";
 
@@ -8,12 +8,32 @@ export default class ProfileStore {
     loadingProfile = false;
     uploading = false;
     loading = false;
+    followings: Profile[] = [];
+    loadingFollowings = false;
+    activeTab = 0;
 
     constructor() {
         makeAutoObservable(this);
+
+        reaction(
+            () => this.activeTab,
+            activeTab => {
+                if (activeTab === 3 || activeTab === 4) {
+                    const predicate = activeTab === 3 ? 'followers' : 'following';
+                    this.loadFollowings(predicate);
+                }else {
+                    this.followings = [];
+                }
+            }
+        )
     }
 
-    //
+    // This will set the active tab
+    setActiveTab = (activeTab: number) => {
+        this.activeTab = activeTab;
+    }
+
+    // This will return true if the current user is the user whose profile is being viewed
     get isCurrentUser() {
         if (store.userStore.user && this.profile) {
             return store.userStore.user.userName === this.profile.username;
@@ -21,7 +41,7 @@ export default class ProfileStore {
         return false;
     }
 
-    //
+    // Load the profile
     loadProfile = async (username: string) => {
         this.loadingProfile = true;
         try {
@@ -36,7 +56,7 @@ export default class ProfileStore {
         }
     }
 
-    //
+    // Upload a photo
     uploadPhoto = async (file: Blob) => {
         this.uploading = true;
         try {
@@ -58,7 +78,7 @@ export default class ProfileStore {
         }
     }
 
-    //
+    // Set the main photo
     setMainPhoto = async (photo: Photo) => {
         this.loading = true;
         try {
@@ -79,7 +99,7 @@ export default class ProfileStore {
         }
     }
 
-    //
+    // Delete the photo
     deletePhoto = async (photo: Photo) => {
         this.loading = true;
         try {
@@ -97,7 +117,7 @@ export default class ProfileStore {
         }
     }
 
-    //
+    // Update the profile
     updateProfile = async (profile: Partial<Profile>) => {
         this.loading = true;
         try {
@@ -113,6 +133,53 @@ export default class ProfileStore {
         }catch (error) {
             console.log(error);
             runInAction(() => this.loading = false);
+        }
+    }
+
+    // Update following
+    updateFollowing = async (username: string, following: boolean) => {
+        this.loading = true;
+        try {
+            await agent.Profiles.updateFollowing(username); // This will update the following in the API
+            store.activityStore.updateAttendeeFollowing(username); // This will update the following in the state
+            runInAction(() => {
+                // If the profile username is not equal to the username in the state
+                // & the profile username is not equal to the username, update the following in the state
+                if (this.profile && this.profile.username !== store.userStore.user?.userName && this.profile.username === username) {
+                    following ? this.profile.followersCount++ : this.profile.followersCount--; // This will update the followers count in the state
+                    this.profile.following = !this.profile.following; // This will update the following in the state
+                }
+                // If the profile username is equal to the username in the state, update the following in the state
+                if(this.profile && this.profile.username === store.userStore.user?.userName) {
+                    following ? this.profile.followingCount++ : this.profile.followingCount--; // This will update the following count in the state
+                }
+                this.followings.forEach(profile => {
+                    // If the profile username is equal to the username, update the following in the state
+                    if (profile.username === username) {
+                        profile.following ? profile.followersCount-- : profile.followersCount++; // This will update the followers count in the state
+                        profile.following = !profile.following; // This will update the following in the state
+                    }
+                })
+                this.loading = false; // This will set the loading state to false
+            })
+        }catch (error) {
+            console.log(error);
+            runInAction(() => this.loading = false);
+        }
+    }
+
+    // Load followings
+    loadFollowings = async (predicate: string) => {
+        this.loadingFollowings = true;
+        try {
+            const followings = await agent.Profiles.listFollowings(this.profile!.username, predicate); // This will return a list of profiles
+            runInAction(() => {
+                this.followings = followings; // This will set the followings in the state
+                this.loadingFollowings = false; // This will set the loading state to false
+            })
+        }catch (error) {
+            console.log(error);
+            runInAction(() => this.loadingFollowings = false);
         }
     }
 }
