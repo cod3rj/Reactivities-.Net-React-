@@ -20,5 +20,13 @@ namespace API.Controllers
             // We return the result of the query
             return HandleResult(await Mediator.Send(command));
         }
+
+        // We add an endpoint for getting the list of user activities
+        [HttpGet("{username}/activities")]
+        public async Task<IActionResult> GetUserActivities(string username, string predicate)
+        {
+            // We return the result of the query
+            return HandleResult(await Mediator.Send(new ListActivities.Query { Username = username, Predicate = predicate }));
+        }
     }
 }

@@ -53,6 +53,20 @@ namespace Application.Core
                 .ForMember(d => d.Username, o => o.MapFrom(s => s.Author.UserName))
                 // We map the Image property to the AppUser.Photos.Url property
                 .ForMember(d => d.Image, o => o.MapFrom(s => s.Author.Photos.FirstOrDefault(x => x.IsMain).Url));
+
+            // CreateMap is used to define a mapping from ActivityAttendee to UserActivityDto
+            CreateMap<ActivityAttendee, Profiles.UserActivityDto>()
+                // ForMember is used to configure specific members of the destination type (UserActivityDto)
+                // Map the Id property of UserActivityDto to the Id property of ActivityAttendee's associated Activity
+                .ForMember(d => d.Id, o => o.MapFrom(s => s.Activity.Id))
+                // Map the Date property of UserActivityDto to the Date property of ActivityAttendee's associated Activity
+                .ForMember(d => d.Date, o => o.MapFrom(s => s.Activity.Date))
+                // Map the Title property of UserActivityDto to the Title property of ActivityAttendee's associated Activity
+                .ForMember(d => d.Title, o => o.MapFrom(s => s.Activity.Title))
+                // Map the Category property of UserActivityDto to the Category property of ActivityAttendee's associated Activity
+                .ForMember(d => d.Category, o => o.MapFrom(s => s.Activity.Category))
+                // Map the HostUsername property of UserActivityDto to the username of the host of the associated Activity
+                .ForMember(d => d.HostUsername, o => o.MapFrom(s => s.Activity.Attendees.FirstOrDefault(x => x.isHost).AppUser.UserName));
         }
     }
 }

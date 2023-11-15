@@ -3,22 +3,27 @@ using Application.Interfaces;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Persistence;
 
 namespace Application.Activities
 {
+    // This class is responsible for querying the database for a list of activities (e.g., api/activities).
     public class List
     {
-        // This class is used to query the database for a list of activities e.g api/activities
-        public class Query : IRequest<Result<List<ActivityDto>>> { }
-        // This class is used to handle the query that would be sent to the database
-        public class Handler : IRequestHandler<Query, Result<List<ActivityDto>>> // The first parameter is the query and the second parameter is the result of the query
+        // Represents the query to retrieve a list of activities
+        public class Query : IRequest<Result<PageList<ActivityDto>>>
         {
-            private readonly DataContext _context;
-            private readonly IMapper _mapper;
-            private readonly IUserAccessor _userAccessor;
+            public ActivityParams Params { get; set; } // Parameters for filtering and pagination
+        }
 
+        // Handles the query to retrieve a list of activities
+        public class Handler : IRequestHandler<Query, Result<PageList<ActivityDto>>>
+        {
+            private readonly DataContext _context; // Entity Framework DbContext for data access
+            private readonly IMapper _mapper; // AutoMapper instance for mapping entities to DTOs
+            private readonly IUserAccessor _userAccessor; // Service to access user-related information
+
+            // Constructor to initialize the handler with required dependencies
             public Handler(DataContext context, IMapper mapper, IUserAccessor userAccessor)
             {
                 _userAccessor = userAccessor;
@@ -26,7 +31,8 @@ namespace Application.Activities
                 _context = context;
             }
 
-            public async Task<Result<List<ActivityDto>>> Handle(Query request, CancellationToken cancellationToken)
+            // Handles the query to retrieve a list of activities
+            public async Task<Result<PageList<ActivityDto>>> Handle(Query request, CancellationToken cancellationToken)
             {
                 /* 
                     We use the cancellationToken to cancel the request if the user cancels the request before it is completed
@@ -44,14 +50,30 @@ namespace Application.Activities
                     {
                         _logger.LogInformation("Task was cancelled");
                     }
-
                 */
-                // This method utilizes ProjectTo from AutoMapper to project the query to the ActivityDto
-                var activities = await _context.Activities
-                    .ProjectTo<ActivityDto>(_mapper.ConfigurationProvider, new { currentUsername = _userAccessor.GetUsername() })
-                    .ToListAsync(cancellationToken);
 
-                return Result<List<ActivityDto>>.Success(activities);
+                // This method utilizes ProjectTo from AutoMapper to project the query to the ActivityDto
+                var query = _context.Activities
+                    .Where(d => d.Date >= request.Params.StartDate) // Filter the activities by date
+                    .OrderBy(d => d.Date)
+                    .ProjectTo<ActivityDto>(_mapper.ConfigurationProvider, new { currentUsername = _userAccessor.GetUsername() })
+                    .AsQueryable();
+
+                // Apply additional filters based on the ActivityParams
+                if (request.Params.IsGoing && !request.Params.IsHost)
+                {
+                    query = query.Where(x => x.Attendees.Any(a => a.Username == _userAccessor.GetUsername()));
+                }
+
+                if (request.Params.IsHost && !request.Params.IsGoing)
+                {
+                    query = query.Where(x => x.HostUsername == _userAccessor.GetUsername());
+                }
+
+                // Create and return a paginated result using the PageList class
+                return Result<PageList<ActivityDto>>.Success(
+                    await PageList<ActivityDto>.CreateAsync(query, request.Params.PageNumber, request.Params.PageSize)
+                );
             }
         }
     }

@@ -1,45 +1,133 @@
-import { makeAutoObservable, runInAction } from "mobx";
+import {makeAutoObservable, reaction, runInAction} from "mobx";
 import { Activity, ActivityFormValues } from "../models/activity";
 import agent from "../api/agent";
 import { format } from "date-fns";
 import { store } from "./store";
 import { Profile } from "../models/profile";
+import {Pagination, PagingParams} from "../models/pagination";
 
 export default class ActivityStore {
     // An in-memory storage of activities
     activityRegistry = new Map<string, Activity>();
-
     // Represents the currently selected activity
     selectedActivity: Activity | undefined = undefined;
-
     // Tracks whether the edit mode is on or off
     editMode = false;
-
     // Represents the loading state
     loading = false;
-
     // Represents the initial loading state
     loadingInitial = false;
+    // Represents pagination information, initially set to null
+    pagination: Pagination | null = null;
+    // Represents paging parameters, initialized with default values
+    pagingParams = new PagingParams();
+    // Represents the predicate used for filtering activities, initially set to include 'all'
+    predicate = new Map().set('all', true);
 
     // Constructor to make all properties observable
     constructor() {
+        // Automatically makes all properties observable
         makeAutoObservable(this);
+
+        // Reaction to changes in the predicate keys
+        reaction(
+            // Observe changes in the keys of the predicate Map
+            () => this.predicate.keys(),
+            // Reaction to changes in predicate keys
+            () => {
+                // Reset paging parameters when the predicate changes
+                this.pagingParams = new PagingParams();
+                // Clear the activityRegistry and reload activities
+                this.activityRegistry.clear();
+                this.loadActivities();
+            }
+        );
+    }
+
+    // Set the paging parameters
+    setPagingParams = (pagingParams: PagingParams) => {
+        this.pagingParams = pagingParams;
+    }
+
+    // Method to set the predicate used for filtering activities
+    setPredicate = (predicate: string, value: string | Date) => {
+        // Function to reset all predicate keys except 'startDate'
+        const resetPredicate = () => {
+            this.predicate.forEach((value, key) => {
+                if (key !== 'startDate') this.predicate.delete(key);
+            });
+        }
+
+        // Switch statement to handle different predicate cases
+        switch (predicate) {
+            // When the predicate is 'all'
+            case 'all':
+                // Reset all predicate keys and set 'all' to true
+                resetPredicate();
+                this.predicate.set('all', true);
+                break;
+
+            // When the predicate is 'isGoing'
+            case 'isGoing':
+                // Reset all predicate keys and set 'isGoing' to true
+                resetPredicate();
+                this.predicate.set('isGoing', true);
+                break;
+
+            // When the predicate is 'isHost'
+            case 'isHost':
+                // Reset all predicate keys and set 'isHost' to true
+                resetPredicate();
+                this.predicate.set('isHost', true);
+                break;
+
+            // When the predicate is 'startDate'
+            case 'startDate':
+                // Delete the existing 'startDate' key and set it to the provided value
+                this.predicate.delete('startDate');
+                this.predicate.set('startDate', value);
+                break;
+        }
+    }
+
+    // Computed property to generate parameters for Axios requests
+    get axiosParams() {
+        // Create a new instance of URLSearchParams
+        const params = new URLSearchParams();
+        // Append 'pageNumber' parameter to the URLSearchParams
+        params.append('pageNumber', this.pagingParams.pageNumber.toString());
+        // Append 'pageSize' parameter to the URLSearchParams
+        params.append('pageSize', this.pagingParams.pageNumber.toString());
+        // Append 'startDate' parameter to the URLSearchParams
+        this.predicate.forEach((value, key) => {
+            // If the key is 'startDate', convert the value to ISO string
+            if (key === 'startDate') {
+                params.append(key, (value as Date).toISOString())
+            } else {
+                params.append(key, value);
+            }
+        })
+        // Return the generated URLSearchParams
+        return params;
     }
 
     // A computed property that returns activities sorted by date
     get activitiesByDate() {
+        // Convert the activityRegistry values to an array and sort them by date
         return Array.from(this.activityRegistry.values())
             .sort((a, b) => a.date!.getTime() - b.date!.getTime());
     }
 
-    // This will return
+    // A computed property that returns activities grouped by date
     get groupedActivities() {
         return Object.entries(
+            // Reduce the activitiesByDate array to a grouped object by date
             this.activitiesByDate.reduce((activities, activity) => {
-                const date = format(activity.date!, 'dd MMM yyyy');
-                activities[ date ] = activities[ date ] ? [ ...activities[ date ], activity ] : [ activity ];
+                const date = format(activity.date!, 'dd MMM yyyy'); // Format the date
+                // If the date key exists, add the activity to the existing array, else create a new array
+                activities[date] = activities[date] ? [...activities[date], activity] : [activity];
                 return activities;
-            }, {} as { [ key: string ]: Activity[] })
+            }, {} as { [key: string]: Activity[] })
         )
     }
 
@@ -47,15 +135,23 @@ export default class ActivityStore {
     loadActivities = async () => {
         this.setLoadingInitial(true);
         try {
-            const activities = await agent.Activities.list();
-            activities.forEach(activity => {
-                this.setActivity(activity);
+            // Call the API to get a paginated list of activities
+            const result = await agent.Activities.list(this.axiosParams);
+            // Iterate over each activity in the data property of the result
+            result.data.forEach(activity => {
+                this.setActivity(activity); // Set each activity in the activityRegistry
             })
+            this.setPagination(result.pagination); // Set the pagination details
             this.setLoadingInitial(false);
         } catch (error) {
             console.log(error);
             this.setLoadingInitial(false);
         }
+    }
+
+    // Set the pagination
+    setPagination = (pagination: Pagination) => {
+        this.pagination = pagination;
     }
 
     // Load Individual activity from the server

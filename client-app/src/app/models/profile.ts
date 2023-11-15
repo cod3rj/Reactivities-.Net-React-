@@ -31,3 +31,11 @@ export interface Photo {
     url: string;        // URL of the photo
     isMain: boolean;    // Indicates whether the photo is the main/profile photo
 }
+
+// Interface representing the structure of a user activity
+export interface UserActivity {
+    id: string;        // Unique identifier for the activity
+    title: string;     // Title of the activity
+    category: string;  // Category of the activity
+    date: Date;        // Date and time of the activity
+}
